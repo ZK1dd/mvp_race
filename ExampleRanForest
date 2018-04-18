@@ -1,0 +1,1 @@
+forest.Pima<-randomForest(Pima$type~.,data=Pima,subset=train,mtry = 3,importance=T)
