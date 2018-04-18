@@ -4,6 +4,21 @@ teamBox = read.csv('nba-enhanced-stats/2016-17_teamBoxScore.csv')
 playerBox17 = read.csv('nba-enhanced-stats/2016-17_playerBoxScore.csv')
 playerBox18 = read.csv('nba-enhanced-stats/2017-18_playerBoxScore.csv')
 
+#logistic regression
+playerBox17_df = data.frame(playerBox17)
+replace(playerBox17_df, is.na(playerBox17_df), "000/000")
+playerBox18_df = data.frame(playerBox17)
+replace(playerBox18_df, is.na(playerBox18_df), "000/000") 
+playerInfo_lm <- glm(playerBox17_df$teamRslt ~ playerBox17_df$playPTS+ playerBox17_df$playAST+ playerBox17_df$playTO+ playerBox17_df$playBLK+ playerBox17_df$playSTL+ playerBox17_df$playPF+ playerBox17_df$playFGA,family = binomial)
+summary(playerInfo_lm)
+step(playerInfo_lm)
+
+player_pred <-predict(playerInfo_lm,playerBox18_df$teamRslt)
+length(playerBox18$teamRslt)
+length(player_pred)
+table(playerBox18$teamRslt, player_pred)
+
+#prediction
 mvpPredictions = playerBox17 %>%
   group_by(playDispNm) %>%
   mutate(blkPerGame = mean(playBLK),
