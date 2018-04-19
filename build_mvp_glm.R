@@ -2,12 +2,22 @@ library(caret)
 library(dplyr)
 
 mvpRanks = read.csv('All_player_data.csv')
+allgames = read.csv('every_game.csv')
+
+teamWins = allgames %>% 
+  select(game_result, team_id, year_id) %>%
+  filter(year_id >= 1989, is_playoffs == 0) %>%
+  group_by(team_id, year_id) %>%
+  mutate(Wins = sum(game_result == 'W')) %>%
+  distinct(team_id, year_id, Wins) 
+
+mvpRanks = left_join(mvpRanks, teamWins, c("Tm_x" = "team_id", "season_end" = "year_id"))
 
 topPlayers = mvpRanks %>%
   filter((PS.G >= 20 & OBPM >= 0 & DBPM >= 0) | MVP == 1,  season_end < 2012) %>%
   group_by(season_end) %>%
   top_n(5) %>%
-  select(player, MVP, GS, PS.G, TRB, AST, STL, BLK, TOV, OBPM, DBPM) 
+  select(player, MVP, GS, PS.G, TRB, AST, STL, BLK, TOV, OBPM, DBPM, Wins) 
 #there are 6 values in 2007 for some reason
 topPlayers <- topPlayers[-91,]
 
@@ -153,3 +163,4 @@ mvpByMethod3 = rbind(topPlayers,topPlayersTest) %>%
 
 compareMVP <- cbind(trueMVP, mvpByMethod1, mvpByMethod2, mvpByMethod3)
 compareMVP <- compareMVP[,-c(3,5,7)]
+
