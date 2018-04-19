@@ -305,6 +305,52 @@ cm
 error
 
 
+#Method 7 - random Forest
+library(randomForest)
+mvp_ranForest <- randomForest(MVP ~ GS + PS.G + TRB + AST + STL + BLK + TOV + 
+                                OBPM + DBPM + Wins, data = topPlayers)
+summary(mvp_ranForest)
+#training data - predictions, add to DF
+topPlayers$mvp_rf <- predict(mvp_ranForest, topPlayers[, c('GS', 'PS.G', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'OBPM', 'DBPM', 'Wins')], type="response")
+a <- c(data.frame(table(topPlayers$season_end))[,2])
+b <- c(1,a)
+for (i in 2:length(b)) b[i] <- b[i-1]+b[i]
+b <- b[-24]
+c <- a-1
+for (value in b){
+  for (j in 0:c[match(value,b)]){
+    topPlayers[value+j,23] <- ifelse(topPlayers[value+j,22]==
+                                       max(topPlayers[(value):(value+c[match(value,b)]),22]),
+                                     1,0)
+  }
+}
+
+#training data - confusion matrix
+m1cm <- table(topPlayers$MVP,topPlayers$V23)
+m1error <- (m1cm[1,2]+m1cm[2,1])/(sum(m1cm[,1])+sum(m1cm[,2]))
+m1cm
+m1error
+#test data - predictions, add to DF
+mvp_glm.test = predict(mvp_ranForest, topPlayersTest[, c('GS', 'PS.G', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'OBPM', 'DBPM','Wins')], type="response")
+topPlayersTest$rftest <- mvp_glm.test
+a <- c(data.frame(table(topPlayersTest$season_end))[,2])
+b <- c(1,a)
+for (i in 2:length(b)) b[i] <- b[i-1]+b[i]
+b <- b[-5]
+c <- a-1
+for (value in b){
+  for (j in 0:c[match(value,b)]){
+    topPlayersTest[value+j,23] <- ifelse(topPlayersTest[value+j,22]==max(topPlayersTest[(value):(value+c[match(value,b)]),22]),
+                                         1,0)
+  }
+}
+#test data - confusion matrix, error
+cm <- table(topPlayersTest$MVP,topPlayersTest$V23)
+error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
+cm
+error
+
+
 #aggregate all methods MVP picks into one table for comparison
 trueMVP = mvpRanks %>%
   filter(MVP == 1) %>%
@@ -341,7 +387,12 @@ mvpByMethod6 = rbind(topPlayers,topPlayersTest) %>%
   group_by(season_end) %>%
   select(season_end,player)
 
-compareMVP <- cbind(trueMVP, mvpByMethod1, mvpByMethod2, mvpByMethod3,
-                    mvpByMethod4, mvpByMethod5, mvpByMethod6)
-compareMVP <- compareMVP[,-c(3,5,7,9,11,13)]
+mvpByMethod7 = rbind(topPlayers,topPlayersTest) %>%
+  filter(V23 == 1) %>%
+  group_by(season_end) %>%
+  select(season_end,player)
 
+compareMVP <- cbind(trueMVP, mvpByMethod1, mvpByMethod2, mvpByMethod3,
+                    mvpByMethod4, mvpByMethod5, mvpByMethod6, mvpByMethod7)
+compareMVP <- compareMVP[,-c(3,5,7,9,11,13,15)]
+write.csv(compareMVP,"compareMVP")
