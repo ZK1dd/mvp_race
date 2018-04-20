@@ -37,6 +37,9 @@ allPlayersTest = mvpRanks %>%
   group_by(season_end) %>%
   select(player, MVP, GS, PS.G, TRB, AST, STL, BLK, TOV, OBPM, DBPM, Wins)
 
+playerstats18 <- read.csv("playerstats18.csv")
+playerstats18 <- playerstats18[1:20,-1]
+
 #Method 1 - logistic regression-predict MVP based on instinctual important variables
 mvp_glm <- glm(MVP ~ GS + PS.G + TRB + AST + STL + BLK + TOV + OBPM + DBPM, data = topPlayers, family = binomial)
 summary(mvp_glm)
@@ -79,6 +82,8 @@ cm <- table(topPlayersTest$MVP,topPlayersTest$V15)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+#predict18
+playerstats18$m1 <- predict(mvp_glm, playerstats18[, c('GS', 'PS.G', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'OBPM', 'DBPM')], type="response")
 
 #Method 2 - use significant vars Method 1 (using the same didn't converge), all Players
 mvp_glm <- glm(MVP ~ PS.G + AST + STL + DBPM, data = allPlayersTrain, family = binomial)
@@ -123,6 +128,8 @@ cm <- table(allPlayersTest$MVP,allPlayersTest$V15)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+#2018 predict
+playerstats18$m2 <- predict(mvp_glm, playerstats18[, c('PS.G','AST', 'STL', 'DBPM')], type="response")
 
 #Method 3 - logistic regression, topPlayer, predict MVP on significant variables from M1: PS.G, AST, STL, DBPM
 mvp_glm <- glm(MVP ~ PS.G + AST + STL + DBPM, data = topPlayers, family = binomial)
@@ -164,6 +171,8 @@ cm <- table(topPlayersTest$MVP,topPlayersTest$V17)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+#2018 predict
+playerstats18$m3 <- predict(mvp_glm, playerstats18[, c('PS.G','AST', 'STL', 'DBPM')], type="response")
 
 #Method 4 - logistic regression-predict MVP based on instinctual important variables, added in team wins
 mvp_glm <- glm(MVP ~ GS + PS.G + TRB + AST + STL + BLK + TOV + OBPM + DBPM + Wins, data = topPlayers, family = binomial)
@@ -207,6 +216,10 @@ cm <- table(topPlayersTest$MVP,topPlayersTest$V19)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+#2018 predict
+playerstats18$m4 <- predict(mvp_glm, playerstats18[, c('GS', 'PS.G', 'TRB', 'AST', 'STL', 
+                                                       'BLK', 'TOV', 'OBPM', 'DBPM', 'Wins')], 
+                            type="response")
 
 #Method 5 - use significant vars Method 4 (using the same didn't converge), all Players, add in team wins
 mvp_glm <- glm(MVP ~ PS.G + AST + Wins, data = allPlayersTrain, family = binomial)
@@ -255,6 +268,9 @@ cm <- table(allPlayersTest$MVP,allPlayersTest$V17)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+#2018 predictions
+playerstats18$m5 <- predict(mvp_glm, playerstats18[, c('PS.G','AST', 'Wins')], 
+                            type="response")
 
 #Method 6 - use significant vars Method 4 (using the same didn't converge), top Players
 mvp_glm <- glm(MVP ~ PS.G + AST + Wins, data = topPlayers, family = binomial)
@@ -303,7 +319,9 @@ cm <- table(topPlayersTest$MVP,topPlayersTest$V21)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
-
+#2018 predictions
+playerstats18$m6 <- predict(mvp_glm, playerstats18[, c('PS.G','AST', 'Wins')], 
+                            type="response")
 
 #Method 7 - random Forest
 library(randomForest)
@@ -349,6 +367,9 @@ cm <- table(topPlayersTest$MVP,topPlayersTest$V23)
 error <- (cm[1,2]+cm[2,1])/(sum(cm[,1])+sum(cm[,2]))
 cm
 error
+playerstats18$m7 <- predict(mvp_glm, playerstats18[, c('GS', 'PS.G', 'TRB', 'AST', 
+                                                       'STL', 'BLK', 'TOV', 'OBPM', 'DBPM','Wins')], 
+                            type="response")
 
 
 #aggregate all methods MVP picks into one table for comparison
@@ -395,4 +416,13 @@ mvpByMethod7 = rbind(topPlayers,topPlayersTest) %>%
 compareMVP <- cbind(trueMVP, mvpByMethod1, mvpByMethod2, mvpByMethod3,
                     mvpByMethod4, mvpByMethod5, mvpByMethod6, mvpByMethod7)
 compareMVP <- compareMVP[,-c(3,5,7,9,11,13,15)]
-write.csv(compareMVP,"compareMVP")
+write.csv(compareMVP,"compareMVP.csv")
+
+max(playerstats18$m1)
+max(playerstats18$m2)
+max(playerstats18$m3)
+max(playerstats18$m4)
+max(playerstats18$m5)
+max(playerstats18$m6)
+max(playerstats18$m7)
+
